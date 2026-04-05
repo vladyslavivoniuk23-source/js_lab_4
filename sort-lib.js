@@ -1,149 +1,149 @@
 const SortLib = {
-    // Допоміжний метод для виведення статистики
-    _printStats: function(name, comparisons, swaps, hasSparse) {
-        console.log(`--- ${name} ---`);
+  
+    printStats: function(methodName, comparisons, swaps, hasUndefined) {
+        console.log(`--- ${methodName} ---`);
         console.log(`Порівнянь: ${comparisons}`);
         console.log(`Обмінів/Переміщень: ${swaps}`);
-        if (hasSparse) {
-            console.warn("Попередження: Масив містив undefined елементи.");
+        if (hasUndefined) {
+            console.log("Повідомлення: У масиві виявлено undefined-елементи. Їх переміщено в кінець.");
         }
     },
 
-    // Перевірка на undefined для розріджених масивів
-    _isSparse: function(arr) {
+    
+    preprocessArray: function(arr) {
+        const clean = [];
+        let undefinedCount = 0;
         for (let i = 0; i < arr.length; i++) {
-            if (!(i in arr) || arr[i] === undefined) return true;
+            if (arr[i] === undefined) {
+                undefinedCount++;
+            } else {
+                clean.push(arr[i]);
+            }
         }
-        return false;
+        return { clean, undefinedCount };
     },
 
-    // Метод обміну (Bubble Sort)
-    bubbleSort: function(inputArr, ascending = true) {
-        let arr = [...inputArr];
-        let n = arr.length;
-        let comp = 0, swaps = 0;
-        let hasSparse = this._isSparse(arr);
+    
+    postprocessArray: function(originalArr, sortedClean, undefinedCount) {
+        for (let i = 0; i < sortedClean.length; i++) originalArr[i] = sortedClean[i];
+        for (let i = 0; i < undefinedCount; i++) originalArr[sortedClean.length + i] = undefined;
+    },
 
-        for (let i = 0; i < n; i++) {
+    
+    bubbleSort: function(arr, ascending = true) {
+        let { clean, undefinedCount } = this.preprocessArray(arr);
+        let n = clean.length;
+        let comparisons = 0, swaps = 0;
+
+        for (let i = 0; i < n - 1; i++) {
             for (let j = 0; j < n - i - 1; j++) {
-                comp++;
-                let shouldSwap = ascending ? (arr[j] > arr[j + 1] || arr[j] === undefined) : (arr[j] < arr[j + 1] || arr[j + 1] === undefined);
-                
-                if (shouldSwap && arr[j+1] !== undefined) {
-                    [arr[j], arr[j + 1]] = [arr[j + 1], arr[j]];
+                comparisons++;
+                if (ascending ? clean[j] > clean[j + 1] : clean[j] < clean[j + 1]) {
+                    [clean[j], clean[j + 1]] = [clean[j + 1], clean[j]];
                     swaps++;
                 }
             }
         }
-        this._printStats("Сортування обміном", comp, swaps, hasSparse);
-        return arr;
+        this.postprocessArray(arr, clean, undefinedCount);
+        this.printStats("Сортування обміном", comparisons, swaps, undefinedCount > 0);
     },
 
-    // Метод мінімальних елементів (Selection Sort)
-    selectionSort: function(inputArr, ascending = true) {
-        let arr = [...inputArr];
-        let n = arr.length;
-        let comp = 0, swaps = 0;
-        let hasSparse = this._isSparse(arr);
+    
+    selectionSort: function(arr, ascending = true) {
+        let { clean, undefinedCount } = this.preprocessArray(arr);
+        let n = clean.length;
+        let comparisons = 0, swaps = 0;
 
         for (let i = 0; i < n - 1; i++) {
-            let idx = i;
+            let targetIdx = i;
             for (let j = i + 1; j < n; j++) {
-                comp++;
-                let condition = ascending ? (arr[j] < arr[idx]) : (arr[j] > arr[idx]);
-                if (arr[idx] === undefined || (arr[j] !== undefined && condition)) {
-                    idx = j;
+                comparisons++;
+                if (ascending ? clean[j] < clean[targetIdx] : clean[j] > clean[targetIdx]) {
+                    targetIdx = j;
                 }
             }
-            if (idx !== i) {
-                [arr[i], arr[idx]] = [arr[idx], arr[i]];
+            if (targetIdx !== i) {
+                [clean[i], clean[targetIdx]] = [clean[targetIdx], clean[i]];
                 swaps++;
             }
         }
-        this._printStats("Сортування вибором", comp, swaps, hasSparse);
-        return arr;
+        this.postprocessArray(arr, clean, undefinedCount);
+        this.printStats("Сортування мінімальних елементів", comparisons, swaps, undefinedCount > 0);
     },
 
-    // Метод вставок (Insertion Sort)
-    insertionSort: function(inputArr, ascending = true) {
-        let arr = [...inputArr];
-        let comp = 0, swaps = 0;
-        let hasSparse = this._isSparse(arr);
+   
+    insertionSort: function(arr, ascending = true) {
+        let { clean, undefinedCount } = this.preprocessArray(arr);
+        let n = clean.length;
+        let comparisons = 0, swaps = 0;
 
-        for (let i = 1; i < arr.length; i++) {
-            let key = arr[i];
+        for (let i = 1; i < n; i++) {
+            let key = clean[i];
             let j = i - 1;
             while (j >= 0) {
-                comp++;
-                let condition = ascending ? (arr[j] > key) : (arr[j] < key);
-                if (key !== undefined && (arr[j] === undefined || condition)) {
-                    arr[j + 1] = arr[j];
-                    j--;
+                comparisons++;
+                if (ascending ? clean[j] > key : clean[j] < key) {
+                    clean[j + 1] = clean[j];
                     swaps++;
+                    j--;
                 } else break;
             }
-            arr[j + 1] = key;
+            clean[j + 1] = key;
         }
-        this._printStats("Сортування вставками", comp, swaps, hasSparse);
-        return arr;
+        this.postprocessArray(arr, clean, undefinedCount);
+        this.printStats("Сортування вставками", comparisons, swaps, undefinedCount > 0);
     },
 
-    // Метод Шелла
-    shellSort: function(inputArr, ascending = true) {
-        let arr = [...inputArr];
-        let n = arr.length;
-        let comp = 0, swaps = 0;
-        let hasSparse = this._isSparse(arr);
+   
+    shellSort: function(arr, ascending = true) {
+        let { clean, undefinedCount } = this.preprocessArray(arr);
+        let n = clean.length;
+        let comparisons = 0, swaps = 0;
 
         for (let gap = Math.floor(n / 2); gap > 0; gap = Math.floor(gap / 2)) {
             for (let i = gap; i < n; i++) {
-                let temp = arr[i];
+                let temp = clean[i];
                 let j = i;
                 while (j >= gap) {
-                    comp++;
-                    let condition = ascending ? (arr[j - gap] > temp) : (arr[j - gap] < temp);
-                    if (temp !== undefined && (arr[j - gap] === undefined || condition)) {
-                        arr[j] = arr[j - gap];
-                        j -= gap;
+                    comparisons++;
+                    if (ascending ? clean[j - gap] > temp : clean[j - gap] < temp) {
+                        clean[j] = clean[j - gap];
                         swaps++;
+                        j -= gap;
                     } else break;
                 }
-                arr[j] = temp;
+                clean[j] = temp;
             }
         }
-        this._printStats("Сортування Шелла", comp, swaps, hasSparse);
-        return arr;
+        this.postprocessArray(arr, clean, undefinedCount);
+        this.printStats("Сортування Шелла", comparisons, swaps, undefinedCount > 0);
     },
 
-    // Метод Хоара (Quick Sort)
-    quickSort: function(inputArr, ascending = true) {
-        let arr = [...inputArr];
-        let comp = 0, swaps = 0;
-        let hasSparse = this._isSparse(arr);
+    
+    quickSort: function(arr, ascending = true) {
+        let { clean, undefinedCount } = this.preprocessArray(arr);
+        let comparisons = 0, swaps = 0;
 
-        const sort = (low, high) => {
-            if (low < high) {
-                let pivotIdx = partition(low, high);
-                sort(low, pivotIdx);
-                sort(pivotIdx + 1, high);
+        const sort = (data, left, right) => {
+            if (left >= right) return;
+            let pivot = data[Math.floor((left + right) / 2)];
+            let i = left, j = right;
+
+            while (i <= j) {
+                while (ascending ? data[i] < pivot : data[i] > pivot) { i++; comparisons++; }
+                while (ascending ? data[j] > pivot : data[j] < pivot) { j--; comparisons++; }
+                if (i <= j) {
+                    [data[i], data[j]] = [data[j], data[i]];
+                    swaps++;
+                    i++; j--;
+                }
             }
+            sort(data, left, j);
+            sort(data, i, right);
         };
 
-        const partition = (low, high) => {
-            let pivot = arr[Math.floor((low + high) / 2)];
-            let i = low - 1;
-            let j = high + 1;
-            while (true) {
-                do { i++; comp++; } while (ascending ? (arr[i] < pivot) : (arr[i] > pivot && arr[i] !== undefined));
-                do { j--; comp++; } while (ascending ? (arr[j] > pivot) : (arr[j] < pivot && arr[j] !== undefined));
-                if (i >= j) return j;
-                [arr[i], arr[j]] = [arr[j], arr[i]];
-                swaps++;
-            }
-        };
-
-        sort(0, arr.length - 1);
-        this._printStats("Сортування Хоара", comp, swaps, hasSparse);
-        return arr;
+        sort(clean, 0, clean.length - 1);
+        this.postprocessArray(arr, clean, undefinedCount);
+        this.printStats("Сортування Хоара (QuickSort)", comparisons, swaps, undefinedCount > 0);
     }
 };

@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <title>JS Sorting Library Test</title>
+</head>
+<body>
+    <h1>Лабораторна робота: Сортування масивів</h1>
+    <p>Результати дивіться в консолі браузера (F12).</p>
+
+    <script src="sort-lib.js"></script>
+    <script>
+        // Генериуємо масив 100+ елементів
+        const fullArray = Array.from({length: 105}, () => Math.floor(Math.random() * 1000));
+        
+        // Створюємо розріджений масив
+        const sparseArray = [...fullArray];
+        sparseArray[10] = undefined;
+        sparseArray[50] = undefined;
+        sparseArray[100] = undefined;
+
+        console.log("%c--- ТЕСТ: ПОВНИЙ МАСИВ ---", "color: blue; font-weight: bold");
+        SortLib.bubbleSort(fullArray);
+        SortLib.selectionSort(fullArray);
+        SortLib.insertionSort(fullArray);
+        SortLib.shellSort(fullArray);
+        SortLib.quickSort(fullArray);
+
+        console.log("%c--- ТЕСТ: РОЗРІДЖЕНИЙ МАСИВ ---", "color: red; font-weight: bold");
+        SortLib.bubbleSort(sparseArray);
+        SortLib.selectionSort(sparseArray);
+        SortLib.insertionSort(sparseArray);
+        SortLib.shellSort(sparseArray);
+        SortLib.quickSort(sparseArray);
+    </script>
+</body>
+</html>
